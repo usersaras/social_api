@@ -1,11 +1,5 @@
-from random import randrange
-from typing import Optional
 from fastapi import FastAPI, Response, status, HTTPException, Depends
-from fastapi.params import Body
-from pydantic import BaseModel
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import time
+from app.schemas import CreatePost, EditPost, GetPostsResponse
 from . import models
 from .database import engine, get_db
 from sqlalchemy.orm import Session
@@ -16,19 +10,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 
-class CreatePost(BaseModel):
-    title: str
-    content: str
-    published: bool = True  # default value
-
-
-class EditPost(BaseModel):
-    title: str
-    content: str
-    published: bool
-
-
-@app.get("/posts")
+@app.get("/posts", response_model=GetPostsResponse)
 async def get_all_posts(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
     posts_count = db.query(models.Post).count()
