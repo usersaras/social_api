@@ -1,83 +1,80 @@
 from random import randrange
 from typing import Optional
-from fastapi import FastAPI, Response, status, HTTPException
+from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
 from pydantic import BaseModel
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import time
+from . import models
+from .database import engine, get_db
+from sqlalchemy.orm import Session
+
+models.Base.metadata.create_all(bind=engine)
+
 
 app = FastAPI()
 
+
 class CreatePost(BaseModel):
-    name: str
-    designation: str
-    # published: bool = True # default value
-    # rating: Optional[int] = None # optional value
+    title: str
+    content: str
+    published: bool = True  # default value
+
 
 class EditPost(BaseModel):
-    name: Optional[str] = None
-    designation: Optional[str] = None
+    title: str
+    content: str
+    published: bool
 
-sim_database = [{"id": 10,"name": "Michael Scott", "designation": "Manager"}, {"id": 102,"name": "Dwight Schrute", "designation": "Assistant to the Manager"}]
 
 @app.get("/posts")
-async def get_all_posts():
-    return {'data': sim_database, "count": len(sim_database)}
+async def get_all_posts(db: Session = Depends(get_db)):
+    posts = db.query(models.Post).all()
+    posts_count = db.query(models.Post).count()
+    return {"success": True, "data": posts, "count": posts_count}
 
 
-@app.get("/posts/{id}") # path parameter
-async def get_one_post(id: int):
-    filter_post = filter(lambda post: post['id'] == id, sim_database)
-    post = (list(filter_post))
+@app.get("/posts/{id}")  # path parameter
+async def get_one_post(id: int, db: Session = Depends(get_db)):
+    post = db.query(models.Post).filter(models.Post.id == id).first()
+    return {"data": post}
 
-    if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} not found!")
-    
-    return {'data': list(post)[0]}
 
-@app.post("/posts",  status_code=status.HTTP_201_CREATED)
-async def create_post(payload: CreatePost):
-    post = payload.model_dump() # is of type pydantic model
-    post['id'] = randrange(1, 1000)
-    sim_database.append(post)
-    return { 
-        'message': 'Created post!',
-        'id': post['id']
-    }
-
-@app.put("/posts/{id}")
-async def update_post(id: int, payload: EditPost, response: Response):
-    name, designation = payload.model_dump().values()
-    print(name, designation)
-    found_post = list(filter(lambda post: post['id'] == id, sim_database))
-
-    if not bool(name is None or designation is None):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Either name or designation should be provided!')
-
-    if not found_post:
-        raise HTTPException(status_code=404, detail=f"Post with id {id} does not exist!")
-    
-    post = found_post[0]
-
-    if name != None:
-        post['name'] = name
-
-    if designation != None:
-        post['designation'] = designation
+@app.post("/posts", status_code=status.HTTP_201_CREATED)
+async def create_post(payload: CreatePost, db: Session = Depends(get_db)):
+    new_post = models.Post(**payload.model_dump())
+    db.add(new_post)
+    db.commit()
+    db.refresh(new_post)  # retrieving
 
     return {
-        'message': 'Post edited successfully!',
-        'id': id
+        "success": True,
+        "created_post": new_post,
     }
 
+
+@app.put("/posts/{id}")
+async def update_post(id: int, payload: EditPost, db: Session = Depends(get_db)):
+    try:
+        post = db.query(models.Post).filter(models.Post.id == id)
+        post.one()
+        post.update({**payload.model_dump()})
+        db.commit()
+
+        return {"message": "Post edited successfully!", "id": id}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_post(id:int):
-    global sim_database
-
-    filter_post = filter(lambda post: post['id'] == id, sim_database)
-    post = (list(filter_post))
-
-    if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} not found!")
-    
-    new_list = [item for item in sim_database if item['id'] != id]
-    sim_database = new_list
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+async def delete_post(id: int, db: Session = Depends(get_db)):
+    try:
+        post = db.query(models.Post).filter(models.Post.id == id)
+        post.one()
+        post.delete()
+        db.commit()
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
