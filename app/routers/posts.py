@@ -1,15 +1,22 @@
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
-from fastapi import Response, status, HTTPException, Depends, APIRouter
 
-from ..schemas import CreatePost, EditPost, GetPostsResponse
+from app.authentication.oauth2 import get_current_user
+
 from .. import models
 from ..database import get_db
+from ..schemas import CreatePost, EditPost, GetPostsResponse
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
 
 
-@router.get("/", response_model=GetPostsResponse)
-async def get_all_posts(db: Session = Depends(get_db)):
+@router.get(
+    "/",
+    response_model=GetPostsResponse,
+)
+async def get_all_posts(
+    db: Session = Depends(get_db),
+):
     posts = db.query(models.Post).all()
     posts_count = db.query(models.Post).count()
     return {"success": True, "data": posts, "count": posts_count}
@@ -22,7 +29,11 @@ async def get_one_post(id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_post(payload: CreatePost, db: Session = Depends(get_db)):
+async def create_post(
+    payload: CreatePost,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),  # authentication
+):
     new_post = models.Post(**payload.model_dump())
     db.add(new_post)
     db.commit()
@@ -35,7 +46,12 @@ async def create_post(payload: CreatePost, db: Session = Depends(get_db)):
 
 
 @router.put("/{id}")
-async def update_post(id: int, payload: EditPost, db: Session = Depends(get_db)):
+async def update_post(
+    id: int,
+    payload: EditPost,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     try:
         post = db.query(models.Post).filter(models.Post.id == id)
         post.one()
@@ -48,7 +64,9 @@ async def update_post(id: int, payload: EditPost, db: Session = Depends(get_db))
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_post(id: int, db: Session = Depends(get_db)):
+async def delete_post(
+    id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)
+):
     try:
         post = db.query(models.Post).filter(models.Post.id == id)
         post.one()
