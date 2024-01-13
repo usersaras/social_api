@@ -26,6 +26,11 @@ class PostResponseSchema(BaseModel):
     user: User
 
 
+class PostsResponseSchema(BaseModel):
+    Post: PostResponseSchema
+    likes: int
+
+
 class BaseGetListResponse(BaseModel):
     success: bool
     count: int
@@ -36,14 +41,20 @@ class BaseGetDictResponse(BaseModel):
 
 
 class GetPostsResponse(BaseGetListResponse):
-    data: List[PostResponseSchema]
+    data: PostsResponseSchema
 
     class Config:
         orm_mode = True
 
 
 class GetPostResponse(BaseGetDictResponse):
-    data: PostResponseSchema
+    posts: List[PostResponseSchema]
+    count: int
 
     class Config:
         orm_mode = True
+
+
+class LikeRequest(BaseModel):
+    post_id: int
+    is_like: bool

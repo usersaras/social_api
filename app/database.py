@@ -1,13 +1,10 @@
 from urllib.parse import quote_plus
 
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from app.environment_vars import DB_HOST, DB_NAME, DB_PASSWORD, DB_USER
-
-load_dotenv()
 
 host = DB_HOST
 name = DB_NAME
