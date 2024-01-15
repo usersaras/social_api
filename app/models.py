@@ -26,3 +26,20 @@ class User(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     email = Column(String, nullable=False, unique=True)
     password = Column(String, nullable=False)
+
+
+class Like(Base):
+    __tablename__ = "like"
+
+    user_id = Column(
+        Integer,
+        ForeignKey("user.id", ondelete="cascade"),
+        primary_key=True,
+        nullable=False,
+    )
+    post_id = Column(
+        Integer,
+        ForeignKey("post.id", ondelete="cascade"),
+        primary_key=True,
+        nullable=False,
+    )
