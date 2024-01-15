@@ -44,7 +44,7 @@ class GetPostsResponse(BaseGetListResponse):
     data: PostsResponseSchema
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class GetPostResponse(BaseGetDictResponse):
@@ -52,7 +52,7 @@ class GetPostResponse(BaseGetDictResponse):
     count: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class LikeRequest(BaseModel):

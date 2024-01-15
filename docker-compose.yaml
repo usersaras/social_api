@@ -12,7 +12,6 @@ services:
       # ^ listens to changes 
     env_file:
       - ./app/.env
-
       
   postgres:
     image: postgres

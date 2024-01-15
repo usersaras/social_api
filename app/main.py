@@ -21,3 +21,8 @@ app.include_router(posts.router)
 app.include_router(users.router)
 app.include_router(authentication.router)
 app.include_router(likes.router)
+
+
+@app.get("/")
+async def root():
+    return {"success": True, "message": "Hello FastAPI!"}
