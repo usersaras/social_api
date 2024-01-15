@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from typing import List
+
+from pydantic import BaseModel, EmailStr
 
 
 class CreatePost(BaseModel):
@@ -12,20 +13,37 @@ class EditPost(CreatePost):
     published: bool
 
 
-class PostsResponseSchema(BaseModel):
+class User(BaseModel):
+    id: int
+    email: EmailStr
+
+
+class PostResponseSchema(BaseModel):
     id: int
     title: str
     content: str
     published: bool
+    user: User
 
 
-class BaseGetResponse(BaseModel):
+class BaseGetListResponse(BaseModel):
     success: bool
     count: int
 
 
-class GetPostsResponse(BaseGetResponse):
-    data: List[PostsResponseSchema]
+class BaseGetDictResponse(BaseModel):
+    success: bool
+
+
+class GetPostsResponse(BaseGetListResponse):
+    data: List[PostResponseSchema]
+
+    class Config:
+        orm_mode = True
+
+
+class GetPostResponse(BaseGetDictResponse):
+    data: PostResponseSchema
 
     class Config:
         orm_mode = True

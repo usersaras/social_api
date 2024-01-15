@@ -1,18 +1,19 @@
+from urllib.parse import quote_plus
+
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from urllib.parse import quote_plus
-import os
-from dotenv import load_dotenv
+
+from app.environment_vars import DB_HOST, DB_NAME, DB_PASSWORD, DB_USER
 
 load_dotenv()
 
-host = os.getenv("DB_HOST")
-name = os.getenv("DB_NAME")
-user = os.getenv("DB_USER")
-password = os.getenv("DB_PASSWORD")
+host = DB_HOST
+name = DB_NAME
+user = DB_USER
+password = DB_PASSWORD
 
-print(host, name, user, password)
 
 DB_URL = f"postgresql://{user}:{quote_plus(password)}@{host}/{name}"
 
