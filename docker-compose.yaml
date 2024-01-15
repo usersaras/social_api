@@ -1,0 +1,26 @@
+version: "3"
+services: 
+  api: 
+    command: bash -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    build: .
+    depends_on:
+      - postgres
+    ports:
+      - 8000:8000
+    volumes:
+      - ./:/usr/src/app:ro
+      # ^ listens to changes 
+    env_file:
+      - ./app/.env
+
+      
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=Password123
+      - POSTGRES_DB=fastapi
+    volumes:
+      - fastapi-db:/var/lib/postgresql/data
+
+volumes:
+  fastapi-db:
